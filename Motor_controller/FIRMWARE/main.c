@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* =====================  STATE MACHINE  ===================== */
 typedef enum {
     ST_STOP = 0,
     ST_RUN_FORWARD,    // CW
@@ -13,10 +12,10 @@ typedef enum {
 
 volatile motor_state_t state = ST_STOP;
 
-/* ===================== CONTROL VARIABLES ===================== */
+
 #define RX_BUFFER_SIZE 32
-volatile uint8_t rx_dma_buffer[RX_BUFFER_SIZE];   // DMA buffer
-volatile uint8_t rx_msg_buffer[RX_BUFFER_SIZE];   // Processed message
+volatile uint8_t rx_dma_buffer[RX_BUFFER_SIZE];   
+volatile uint8_t rx_msg_buffer[RX_BUFFER_SIZE];   
 volatile uint8_t rx_ready = 0;
 
 volatile int target_rpm = 0;
@@ -25,12 +24,11 @@ volatile int32_t dcnt = 0;
 volatile int current_pwm_duty = 0; 
 volatile int need_test = 0;
 volatile float value=0;
-/* PID gains */
+// PID gains 
 #define KP 2.3f
 #define KI 0.5f
 #define KD 0.001f
 
-/* Function prototypes */
 void GPIO_Config(void);
 void TIM3_PWM_Config(void);
 void TIM2_Encoder_Config(void);
@@ -41,10 +39,8 @@ void apply_pwm(int duty);
 void check_dma_message(void);
 void delay_ms(uint32_t ms);
 
-/* =========================================================== */
 int main(void)
 {
-    // Initialize peripherals
     GPIO_Config();
     TIM3_PWM_Config();
     TIM2_Encoder_Config();
@@ -57,7 +53,7 @@ int main(void)
 
     while(1)
     {
-        check_dma_message(); // Poll DMA buffer
+        check_dma_message(); 
 		
         if(rx_ready)
         {
@@ -65,7 +61,7 @@ int main(void)
             value = atoi((char*)rx_msg_buffer);
             memset((void*)rx_msg_buffer, 0, RX_BUFFER_SIZE);
 
-            // Limit value to -3000…3000 RPM
+            // Limit value to -3000ï¿½3000 RPM
             if(value > 3000) value = 3000;
             if(value < -3000) value = -3000;
 
@@ -87,7 +83,6 @@ int main(void)
     }
 }
 
-/* ============================================================ */
 void apply_pwm(int duty)
 {
     if(duty < 0) duty = 0;
@@ -97,7 +92,6 @@ void apply_pwm(int duty)
     current_pwm_duty = duty;
 }
 
-/* ============================================================ */
 void motor_state_machine(void)
 {
     switch(state)
@@ -127,7 +121,6 @@ void motor_state_machine(void)
     }
 }
 
-/* ============================================================ */
 void USART2_DMA_Config(void)
 {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
@@ -177,7 +170,6 @@ void USART2_DMA_Config(void)
     DMA_Cmd(DMA1_Stream5, ENABLE);
 }
 
-/* ============================================================ */
 void check_dma_message(void)
 {
     static uint16_t last_pos = 0;
@@ -206,7 +198,6 @@ void check_dma_message(void)
     }
 }
 
-/* ============================================================ */
 void SysTick_Handler(void)
 {
     static uint32_t last_cnt = 0;
@@ -214,7 +205,7 @@ void SysTick_Handler(void)
     static float pid_integral = 0;
     static float last_error = 0;
 
-    /* ==== Read encoder ==== */
+    //Read encoder 
     uint32_t now = TIM2->CNT;
     int32_t diff = (int32_t)(now - last_cnt);
 
@@ -224,26 +215,21 @@ void SysTick_Handler(void)
     last_cnt = now;
     dcnt = diff;
 
-    /* pulses/ms ? RPM  (correct formula) */
     measured_rpm = (float)(diff * 18600.0f / 234.0f);
-    /* 3000 = 60s / 0.02s (50Hz encoder sampling) adjust as needed */
 
     if(state != ST_STOP)
     {
-        /* ==== PID ==== */
+
         int error = (float)target_rpm*7 - measured_rpm;
 				need_test = abs((float)target_rpm - measured_rpm);
-        /* Integral with anti-windup */
         pid_integral += error * 0.001f;
         if(pid_integral > 2000) pid_integral = 2000;
         if(pid_integral < -2000) pid_integral = -2000;
 
-        /* Proper derivative: DO NOT use abs() */
         float derivative = (error - last_error) * 1000.0f;   // dt = 1ms
 
         float output = KP * error + KI * pid_integral + KD * derivative;
 
-        /* Direction based on sign of target RPM */
         int pwm = (int)output;
 
         if(pwm < 0) pwm = -pwm;
@@ -255,13 +241,11 @@ void SysTick_Handler(void)
     }
     else
     {
-        /* STOP state */
         pid_integral = 0;
         last_error = 0;
         apply_pwm(0);
     }
 
-    /* ==== Send UART feedback every 100ms ==== */
     uart_send_counter++;
     if(uart_send_counter >= 100)//10
     {
@@ -278,7 +262,6 @@ void SysTick_Handler(void)
     }
 }
 
-/* ============================================================ */
 void TIM3_PWM_Config(void)
 {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
@@ -315,7 +298,6 @@ void TIM3_PWM_Config(void)
     TIM_Cmd(TIM3, ENABLE);
 }
 
-/* ============================================================ */
 void TIM2_Encoder_Config(void)
 {
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
@@ -339,7 +321,6 @@ void TIM2_Encoder_Config(void)
     TIM_Cmd(TIM2, ENABLE);
 }
 
-/* ============================================================ */
 void GPIO_Config(void)
 {
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
