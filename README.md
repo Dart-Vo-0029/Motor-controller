@@ -5,6 +5,7 @@ The main components include:
 - **GA25-370 DC motor**
 - **L298N DC motor driver**
 - **JDY-24M Bluetooth module**
+  
 Using these components, the DC motor can be controlled wirelessly via a Bluetooth connection. The PWM values are displayed on a Bluetooth monitoring application running on a smartphone or laptop.
 # Demonstration
   ## Breadboard Implementation:
