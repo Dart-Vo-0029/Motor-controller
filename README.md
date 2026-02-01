@@ -1,4 +1,4 @@
-# Project:PWM-Based DC Motor Controller with Speed Monitoring via bluetooth device
+# Project: PWM-Based DC Motor Controller with Speed Monitoring via bluetooth device
 This project demonstrates how to control a DC motor with an encoder using the STM32F407. It involves a closed-loop control system that uses Pulse Width Modulation (PWM) for speed control, an H-bridge motor driver for direction control, and a timer in encoder mode to read the motor’s actual speed and position.
 The main components include:
 - **STM32F407VG**
